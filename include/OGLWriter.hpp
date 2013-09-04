@@ -3,11 +3,20 @@
 
 #include "FrameWriter.hpp"
 #include "VideoRecorder.hpp"
+#include <X11/X.h>
+#include <X11/Xlib.h>
 #include <GL/gl.h>
+#include <GL/glx.h>
+#include <iostream>
+#include <cstdlib>
 
 struct OGLWriter: public FrameWriter {
 
 	private:
+		typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
+		typedef Bool (*glXMakeContextCurrentARBProc)(Display*, GLXDrawable, GLXDrawable, GLXContext);
+		static glXCreateContextAttribsARBProc glXCreateContextAttribsARB = 0;
+		static glXMakeContextCurrentARBProc glXMakeContextCurrentARB = 0;
 
 		VideoRecorder vr;
 
@@ -23,14 +32,90 @@ struct OGLWriter: public FrameWriter {
 			return t;
 		}
 
+		void OpenGLContext(int resolutionX, int resolutionY) {
+
+			static int visual_attribs[] = {
+				None
+			};
+			int context_attribs[] = {
+				GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+				GLX_CONTEXT_MINOR_VERSION_ARB, 0,
+				None
+			};
+
+			Display* dpy = XOpenDisplay(0);
+			int fbcount = 0;
+			GLXFBConfig* fbc = NULL;
+			GLXContext ctx;
+			GLXPbuffer pbuf;
+
+			/* open display */
+			if ( ! (dpy = XOpenDisplay(0)) ){
+				std::cerr << "Failed to open display" << std::endl;
+				exit(1);
+			}
+
+			/* get framebuffer configs, any is usable (might want to add proper attribs) */
+			if ( !(fbc = glXChooseFBConfig(dpy, DefaultScreen(dpy), visual_attribs, &fbcount) ) ){
+				std::cerr << "Failed to get FBConfig" << std::endl;
+				exit(1);
+			}
+
+			/* get the required extensions */
+			glXCreateContextAttribsARB = (glXCreateContextAttribsARBProc)glXGetProcAddressARB( (const GLubyte *) "glXCreateContextAttribsARB");
+			glXMakeContextCurrentARB = (glXMakeContextCurrentARBProc)glXGetProcAddressARB( (const GLubyte *) "glXMakeContextCurrent");
+			if ( !(glXCreateContextAttribsARB && glXMakeContextCurrentARB) ){
+				std::cerr << "missing support for GLX_ARB_create_context" << std::endl;
+				XFree(fbc);
+				exit(1);
+			}
+
+			/* create a context using glXCreateContextAttribsARB */
+			if ( !( ctx = glXCreateContextAttribsARB(dpy, fbc[0], 0, True, context_attribs)) ){
+				std::cerr << "Failed to create opengl context" << std::endl;
+				XFree(fbc);
+				exit(1);
+			}
+
+			/* create temporary pbuffer */
+			int pbuffer_attribs[] = {
+				GLX_PBUFFER_WIDTH, width,
+				GLX_PBUFFER_HEIGHT, width,
+				None
+			};
+			pbuf = glXCreatePbuffer(dpy, fbc[0], pbuffer_attribs);
+
+			XFree(fbc);
+			XSync(dpy, False);
+
+			/* try to make it the current context */
+			if ( !glXMakeContextCurrent(dpy, pbuf, pbuf, ctx) ){
+				/* some drivers does not support context without default framebuffer, so fallback on
+				 * using the default window.
+				 */
+				if ( !glXMakeContextCurrent(dpy, DefaultRootWindow(dpy), DefaultRootWindow(dpy), ctx) ){
+					std::cerr << "failed to make current" << std::endl;
+					exit(1);
+				}
+			}
+
+			/* try it out */
+			std::cout << "vendor: " << (const char*)glGetString(GL_VENDOR) << std::endl;
+
+		}
+
 	public:
 		int cRed;
 		int cGreen;
 		int cBlue;
 
-		OGLWriter(std::string name, std::string codec, int framerate, int resolutionX, int resolutionY, double right_, double left_, double up_, double down_) {
+		OGLWriter(std::string name, std::string codec, int framerate, int resolutionX, int resolutionY, double right_, double left_, double up_, double down_):
+			right(right_), left(left_), up(up_), down(down_), cRed(255), cGreen(0), cBlue(0) {
 
 			vr.open(name, codec, framerate, resolutionX, resolutionY);
+			OpenGLCOntext(resolutionX, resolutionY);
+			glMatrixMode(GL_PROJECTION);
+			glOrtho (right_, down_, left_, up_, 0, 1);
 
 		}
 
