@@ -1,7 +1,7 @@
 #ifndef OGLWRITER_HPP
 #define OGLWRITER_HPP
 
-#include "FrameWriter.hpp"
+#include "frameWriter.hpp"
 #include "VideoRecorder.hpp"
 #include <X11/X.h>
 #include <X11/Xlib.h>
@@ -10,19 +10,28 @@
 #include <iostream>
 #include <cstdlib>
 
+typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
+typedef Bool (*glXMakeContextCurrentARBProc)(Display*, GLXDrawable, GLXDrawable, GLXContext);
+static glXCreateContextAttribsARBProc glXCreateContextAttribsARB = 0;
+static glXMakeContextCurrentARBProc glXMakeContextCurrentARB = 0;
+
 struct OGLWriter: public FrameWriter {
 
 	private:
-		typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
-		typedef Bool (*glXMakeContextCurrentARBProc)(Display*, GLXDrawable, GLXDrawable, GLXContext);
-		static glXCreateContextAttribsARBProc glXCreateContextAttribsARB = 0;
-		static glXMakeContextCurrentARBProc glXMakeContextCurrentARB = 0;
 
 		VideoRecorder vr;
 
 		void ChangeColor(int r, int g, int b) {
-			if (!IsCurr(r,g,b))
-				glColor3i(r,g,b);
+			if (!IsCurr(r,g,b)) {
+				float rf = r/255.0;
+				float gf = g/255.0;
+				float bf = b/255.0;
+				std::cout << rf << std::endl;
+				glColor3i(rf,gf,bf);
+				cRed = r;
+				cGreen = g;
+				cBlue = b;
+			}
 		}
 
 		bool IsCurr(int r, int g, int b) const {
@@ -79,8 +88,8 @@ struct OGLWriter: public FrameWriter {
 
 			/* create temporary pbuffer */
 			int pbuffer_attribs[] = {
-				GLX_PBUFFER_WIDTH, width,
-				GLX_PBUFFER_HEIGHT, width,
+				GLX_PBUFFER_WIDTH, resolutionX,
+				GLX_PBUFFER_HEIGHT, resolutionY,
 				None
 			};
 			pbuf = glXCreatePbuffer(dpy, fbc[0], pbuffer_attribs);
@@ -105,24 +114,28 @@ struct OGLWriter: public FrameWriter {
 		}
 
 	public:
+		double right;
+		double left;
+		double up;
+		double down;
+
 		int cRed;
 		int cGreen;
 		int cBlue;
 
-		OGLWriter(std::string name, std::string codec, int framerate, int resolutionX, int resolutionY, double right_, double left_, double up_, double down_):
-			right(right_), left(left_), up(up_), down(down_), cRed(255), cGreen(0), cBlue(0) {
+		OGLWriter(std::string name, std::string codec, int framerate, int resolutionX, int resolutionY, double right_, double left_, double up_, double down_): right(right_), left(left_), up(up_), down(down_), cRed(0), cGreen(0), cBlue(0), vr(VideoRecorder(name, codec, framerate, resolutionX, resolutionY)){
 
-			vr.open(name, codec, framerate, resolutionX, resolutionY);
-			OpenGLCOntext(resolutionX, resolutionY);
+			
+			OpenGLContext(resolutionX, resolutionY);
 			glMatrixMode(GL_PROJECTION);
 			glOrtho (right_, down_, left_, up_, 0, 1);
 
 		}
 
-		double NormalizingFactorX() { return 1;}
-		double CenterX() { return (right-left)/2;}
-		double NormalizingFactorY() { return 1;}
-		double CenterY() { return (up-down)/2;}
+		double NormalizingFactorX() const { return 1;}
+		double CenterX() const { return (right-left)/2;}
+		double NormalizingFactorY() const { return 1;}
+		double CenterY() const { return (up-down)/2;}
 
 		void StartFrame() {
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -134,7 +147,7 @@ struct OGLWriter: public FrameWriter {
 
 		void line(double xfrom, double yfrom, double xto, double yto, double width, int red, int green, int blue) {
 			glLineWidth(width);
-			glChangeColour(red,green,blue);
+			ChangeColor(red,green,blue);
 
 			glBegin(GL_LINES);
 			glVertex2d(xfrom, yfrom);
@@ -145,7 +158,7 @@ struct OGLWriter: public FrameWriter {
 		void multiline (const std::vector<double>& x, const std::vector<double>& y, double width, int red, int green, int blue) {
 
 			glLineWidth(width);
-			glColor3i(red,green,blue);
+			ChangeColor(red,green,blue);
 
 			glBegin(GL_LINE_STRIP);
 			const int N = std::min(x.size(),y.size());
@@ -167,6 +180,7 @@ struct OGLWriter: public FrameWriter {
 		}
 
 		void filledTriangle(double x1, double y1, double x2, double y2, double x3, double y3, int red, int green, int blue) {
+			ChangeColor(red,green,blue);
 			glBegin(GL_TRIANGLES);
 			glVertex2d(x1,y1);
 			glVertex2d(x2,y2);
@@ -187,11 +201,12 @@ struct OGLWriter: public FrameWriter {
 
 		void filledSquare(double xfrom, double yfrom, double xto, double yto, int red, int green, int blue) {
 
+			ChangeColor(red,green,blue);
 			glBegin(GL_QUADS);
 			glVertex2d(xfrom,yfrom);
 			glVertex2d(xto  ,yfrom);
 			glVertex2d(xto  ,yto);
-			glVertex2d(xfrom,to);
+			glVertex2d(xfrom,yto);
 			glEnd();
 
 		}
@@ -200,7 +215,7 @@ struct OGLWriter: public FrameWriter {
 			glPolygonMode(GL_FRONT, GL_LINE);
 			glPolygonMode(GL_BACK, GL_LINE);
 
-			filledCircle(xcentre, ycentre, red,green,blue);
+			filledCircle(xcentre, ycentre, radius, red,green,blue);
 
 			glPolygonMode(GL_FRONT, GL_FILL);
 			glPolygonMode(GL_BACK, GL_FILL);
@@ -208,8 +223,11 @@ struct OGLWriter: public FrameWriter {
 		}
 		void filledCircle(double xcentre, double ycentre, double radius, int red, int green, int blue) {
 
+			ChangeColor(red,green,blue);
 			glBegin( GL_TRIANGLE_FAN );
 			glVertex2f(xcentre, ycentre);
+			const double segments=20;
+			//std::cout << "radius: " << radius << std::endl;
 			double const factor = 2*M_PI/segments;
 			for( int n = 0; n <= segments; n++ ) {
 				const double angle = n*factor;
@@ -221,7 +239,7 @@ struct OGLWriter: public FrameWriter {
 
 		void writeText(double x, double y, std::string name, double fontSize, int red, int green, int blue){}
 
-		void printname(){std::cout << "OpenGL FrameWriter" << endl;}
+		void printname(){std::cout << "OpenGL FrameWriter" << std::endl;}
 		void close(){}
 };
 

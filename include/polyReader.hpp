@@ -24,7 +24,8 @@
 #include <fstream>
 #include <vector>
 #include <string>
-#include "imageWriter.hpp"
+#include <memory>
+#include "frameWriter.hpp"
 #include "polygon.hpp"
 
 /*
@@ -47,7 +48,8 @@ struct PolyReader {
 	};
 
 	//Read the next block of data. Commonly, it will be called only once
-	void updatePoly() {
+	bool updatePoly() {
+		bool notEnd = true;
 		int size = _poly.size();
 		for (int i=0; i<size; i++) {
 			
@@ -56,7 +58,7 @@ struct PolyReader {
 
 			//std::cout << i << "   " <<  charLeitor << "\n";
 			
-			bool notEnd = ((x != 0) && (y != 0)) &&  !(_in->eof());
+			notEnd = ((x != 0) && (y != 0)) &&  !(_in->eof());
 			//notEnd = true;
 			if (notEnd) {
 				_poly[i]->_pos = Vector2D(x,y);
@@ -68,10 +70,11 @@ struct PolyReader {
 					_poly[i]->_vertex.push_back(Vector2D(x,y));
 			}
 		}
+		return notEnd;
 	};
 
 	//Call the drawing method of each polygon
-	void draw(ImageWriter *writer) {
+	void draw(FrameWriter *writer) {
 		int size = _poly.size();
 		//cout << size << endl;
 		for (int i=0; i<size; i++) 
@@ -94,7 +97,7 @@ struct PolyReader {
 	};
 
 	//Draw lines between all particles that are within a certain distance
-	void drawLines(ImageWriter *writer, std::vector<DrawablePolygonPtrType> p, const double distance, const double width) {
+	void drawLines(FrameWriter *writer, std::vector<DrawablePolygonPtrType> p, const double distance, const double width) {
 
 		int nHere = _poly.size();
 		int nOther = p.size();

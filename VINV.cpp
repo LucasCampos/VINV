@@ -1,17 +1,17 @@
 /*
- * Name:	POPS - Plotter of POPS Screens
+ * Name:	VINV - Plotter of VINV Screens
  * Author:	Lucas Costa Campos
  * Email: 	Rmk236@gmail.com
  * Version:	0.01
  * License:	GNU General Public License
  * 		Copyright: 2013 Lucas Costa Campos
- * Website: 	https://github.com/LucasCampos/POPS
+ * Website: 	https://github.com/LucasCampos/VINV
  */
 
 /*
- *     This file is part of POPS.
+ *     This file is part of VINV.
  *
- *     POPS is free software; you can redistribute it and/or modify
+ *     VINV is free software; you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation; either version 3 of the License, or
  *     (at your option) any later version.
@@ -32,17 +32,18 @@
 #include <fstream>
 #include <vector>
 #include <string>
-#include "include/imageWriter.hpp"
+#include "include/frameWriter.hpp"
 #include "include/polygon.hpp"
 #include "include/colorPicker.hpp"
 #include "include/polyReader.hpp"
+#include "include/OGLWriter.hpp"
 
 using namespace std;
 
-void Normalize(ImageWriter* writer, std::vector<PolyReader>& poly, bool extendedBox);
-void TakeParameters(int argc, char* argv[], ImageWriter** writer, std::vector<PolyReader>& poly, std::vector<std::string>& toWrite, double& lineWidth, double& fontSize,  bool& drawDistance, double& minDist, bool& extendedBox);
-void Draw(ImageWriter* writer, std::vector<PolyReader>& poly, std::vector<std::string>& toWrite, bool extendedBox, bool drawDistance, double minDist, double lineWidth, double fontSize);
-void connectPoly(ImageWriter *writer, std::vector<PolyReader>& poly, double minDist, double lineWidth);
+void Normalize(FrameWriter* writer, std::vector<PolyReader>& poly, bool extendedBox);
+void TakeParameters(int argc, char* argv[], FrameWriter** writer, std::vector<PolyReader>& poly, std::vector<std::string>& toWrite, double& lineWidth, double& fontSize,  bool& drawDistance, double& minDist, bool& extendedBox);
+void Draw(FrameWriter* writer, std::vector<PolyReader>& poly, std::vector<std::string>& toWrite, bool extendedBox, bool drawDistance, double minDist, double lineWidth, double fontSize);
+void connectPoly(FrameWriter *writer, std::vector<PolyReader>& poly, double minDist, double lineWidth);
 void SimpleHelp();
 
 int main(int argc, char* argv[])
@@ -54,19 +55,19 @@ int main(int argc, char* argv[])
 	double minDist = 1e9;
 	double lineWidth = 0.1;
 	double fontSize = 1.0;
-	ImageWriter* writer;
+	FrameWriter* writer;
 	TakeParameters(argc, argv, &writer, poly, toWrite, lineWidth, fontSize, drawDistance, minDist, extendedBox);
 	writer->printname();
 	Draw(writer, poly, toWrite, extendedBox, drawDistance, minDist, lineWidth, fontSize);
 	writer->close();
 }
 
-void Normalize(ImageWriter* writer, std::vector<PolyReader>& poly, bool extendedBox) {
-	double factor = writer->NormalizingFactor();
-	double center = writer->Center();
+void Normalize(FrameWriter* writer, std::vector<PolyReader>& poly, bool extendedBox) {
+	double factor = writer->NormalizingFactorX();
+	double center = writer->CenterX();
 
 	Vector2D T(center,center);
-	for (int i=0; i<poly.size(); i++){
+	for (unsigned i=0; i<poly.size(); i++){
 		
 		poly[i].rescale(factor);
 		if (extendedBox)
@@ -74,12 +75,12 @@ void Normalize(ImageWriter* writer, std::vector<PolyReader>& poly, bool extended
 	}
 };
 
-void TakeParameters (int argc, char* argv[], ImageWriter** writer, std::vector<PolyReader>& poly, std::vector<std::string>& toWrite, double& lineWidth, double& fontSize, bool& drawDistance, double& minDist, bool& extendedBox){
+void TakeParameters (int argc, char* argv[], FrameWriter** writer, std::vector<PolyReader>& poly, std::vector<std::string>& toWrite, double& lineWidth, double& fontSize, bool& drawDistance, double& minDist, bool& extendedBox){
 
 	bool hasOne = false;
 	std::string nameOutput;
-	double box;
-	double resolution=1920;
+	double box=10;
+	double resolution=800;
 
 	if (argc == 1) {
 		SimpleHelp();
@@ -199,36 +200,49 @@ void TakeParameters (int argc, char* argv[], ImageWriter** writer, std::vector<P
 		exit(1);
 	}
 
-	if (nameOutput.substr(nameOutput.length()-4) == ".png")
-		*writer = new PNGWriter(resolution, (extendedBox?2:1)*box, nameOutput);
+	std::string codec;
+	if (nameOutput.substr(nameOutput.length()-4) == ".avi")
+		codec = "MJPG";
 	else{
-		if (!(nameOutput.substr(nameOutput.length()-4) == ".eps"))
-			nameOutput+=".eps";
-		if (extendedBox)
-			*writer = new EPSWriter(-box, box, nameOutput);
-		else
-			*writer = new EPSWriter(0, box, nameOutput);
-
+		codec = "PIM1";
+		if (!(nameOutput.substr(nameOutput.length()-4) == ".mkv"))
+			nameOutput+=".mkv";
 	}
+
+	if (extendedBox)
+		*writer = new OGLWriter(nameOutput, codec, 20, resolution, resolution, -box, box, -box, box);
+	else
+		*writer = new OGLWriter(nameOutput, codec, 20, resolution, resolution, 0, box, 0, box);
+
+
 }
 
-void Draw(ImageWriter* writer, std::vector<PolyReader>& poly, std::vector<std::string>& toWrite, bool extendedBox, bool drawDistance, double minDist, double lineWidth, double fontSize)
+void Draw(FrameWriter* writer, std::vector<PolyReader>& poly, std::vector<std::string>& toWrite, bool extendedBox, bool drawDistance, double minDist, double lineWidth, double fontSize)
 {
-	for (int i=0; i<poly.size(); i++) 
-		poly[i].updatePoly();
+	bool end = false;
+	while (!end) {
+		writer->StartFrame();
+		for (unsigned i=0; i<poly.size(); i++) 
+			end &= poly[i].updatePoly();
 
-	Normalize(writer, poly, extendedBox);
-	for (int i=0; i<poly.size(); i++) 
-		poly[i].draw(writer);
+		Normalize(writer, poly, extendedBox);
+		for (unsigned i=0; i<poly.size(); i++) 
+			poly[i].draw(writer);
 
-	if (drawDistance) 
-		connectPoly(writer, poly, minDist, lineWidth);
-	for (int i=0; i<toWrite.size(); i++) {
-		writer->writeText(.95*writer->left, (0.97-.05*fontSize - .1*fontSize*i)*writer->up, toWrite[i], fontSize, 0, 0, 0);
+		if (drawDistance) 
+			connectPoly(writer, poly, minDist, lineWidth);
+		//glColor3f(1.0,0,0);
+		writer->filledSquare(-100, -100, 100, 100, 255,0,0);
+		/*
+		for (unsigned i=0; i<toWrite.size(); i++) {
+			writer->writeText(.95*writer->left, (0.97-.05*fontSize - .1*fontSize*i)*writer->up, toWrite[i], fontSize, 0, 0, 0);
+		}
+		*/
+		writer->EndFrame();
 	}
 }
 
-void connectPoly(ImageWriter *writer, std::vector<PolyReader>& poly, double minDist, double lineWidth){
+void connectPoly(FrameWriter *writer, std::vector<PolyReader>& poly, double minDist, double lineWidth){
 
 	cout << "Connecting points\n";
 
@@ -244,7 +258,7 @@ void connectPoly(ImageWriter *writer, std::vector<PolyReader>& poly, double minD
 void SimpleHelp() {
 	
 	cout << "If you find any bug, please write to lqcc@df.ufpe.br\n\n";
-	cout << "POPS: 2.00Alpha\n\n";	
+	cout << "VINV: 0.01\n\n";	
 	std::cout << "Commands: \n\n";
 	std::cout << " -h\n\tShow this help dialog\n\n"; 
 	std::cout << " -s filename Quantidade\n\tAdd a new kind of square, with Quantity squares. To each square, there must be five lines on the file.\n\n";

@@ -26,7 +26,7 @@
 #include <iostream>
 #include <cmath>
 #include <cstdlib>
-#include "imageWriter.hpp"
+#include "frameWriter.hpp"
 
 /*
  *
@@ -86,7 +86,7 @@ class DrawablePolygon: public Polygon {
 		DrawablePolygon(double red, double green, double blue): _red(red), _green(green), _blue(blue) {};
 		DrawablePolygon(): _red(1.0), _green(1.0), _blue(1.0) {};
 
-		virtual void draw(ImageWriter *writer)=0;
+		virtual void draw(FrameWriter *writer)=0;
 		
 };
 
@@ -109,9 +109,7 @@ class Square: public DrawablePolygon {
 			addVertex(Vector2D( size,-size));
 		}
 
-		void draw(ImageWriter *writer) {
-			
-			int size = _vertex.size();
+		void draw(FrameWriter *writer) {
 			
 			Vector2D p1 = _vertex[0]+_pos;
 			Vector2D p2 = _vertex[2]+_pos;
@@ -143,7 +141,7 @@ class Triangle: public DrawablePolygon{
 			addVertex(T);
 		}
 		
-		void draw(ImageWriter *writer) {
+		void draw(FrameWriter *writer) {
 
 			Vector2D p1 = _vertex[0]+_pos;
 			Vector2D p2 = _vertex[1]+_pos;
@@ -161,7 +159,7 @@ class Circle: public DrawablePolygon {
 		double _radius;
 
 		Circle(double radius,double red, double green, double blue): DrawablePolygon (red,green,blue), _radius(radius) {};
-		void draw(ImageWriter *writer){
+		void draw(FrameWriter *writer){
 
 			writer->filledCircle(_pos.getX(), _pos.getY(), _radius, _red, _green, _blue);
 

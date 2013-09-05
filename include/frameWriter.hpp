@@ -17,13 +17,6 @@
  * 
  * */
 
-/*
- *
- * This file sets the interface to imageWriter, and creates two instances,
- * one to write eps files, and one to write png files. 
- *
- * */
-
 #ifndef FRAMEWRITER_HPP
 #define FRAMEWRITER_HPP
 
@@ -41,11 +34,7 @@
 
 struct FrameWriter {
 
-	double left;
-	double right;
-	double up;
-	double down;
-
+	public: 
 	virtual double NormalizingFactorX() const = 0;
 	virtual double CenterX() const =0;
 	virtual double NormalizingFactorY() const = 0;

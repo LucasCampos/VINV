@@ -32,17 +32,17 @@ class ColorPicker{
 		switch(current) {
 			case 0:
 				current++;
-				return Color(65535,0,0);
+				return Color(255,0,0);
 				break;
 			case 1: 
 				current++;
-				return Color(0.0,65535,.0);
+				return Color(0,255,.0);
 				break;
 			case 2: 
 				current++;
-				return Color(0.0,0.0,65535);
+				return Color(0,0,255);
 				break;
-			default: return Color (rand()%65535, rand()%65535, rand()%65535);
+			default: return Color (rand()%255, rand()%255, rand()%255);
 		}
 	}
 };
