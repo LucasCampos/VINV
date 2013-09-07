@@ -2,7 +2,7 @@
  * Name:	VINV - Plotter of VINV Screens
  * Author:	Lucas Costa Campos
  * Email: 	Rmk236@gmail.com
- * Version:	0.01
+ * Version:	0.02
  * License:	GNU General Public License
  * 		Copyright: 2013 Lucas Costa Campos
  * Website: 	https://github.com/LucasCampos/VINV
@@ -80,7 +80,8 @@ void TakeParameters (int argc, char* argv[], FrameWriter** writer, std::vector<P
 	bool hasOne = false;
 	std::string nameOutput;
 	double box=10;
-	double resolution=800;
+	double resolution=640;
+	int framerate = 30;
 
 	if (argc == 1) {
 		SimpleHelp();
@@ -193,6 +194,12 @@ void TakeParameters (int argc, char* argv[], FrameWriter** writer, std::vector<P
 				exit(1);
 			}
 			fontSize = atof(argv[i+1]);
+		} else if (string(argv[i]) == "-fr") {
+			if (argc <= i+1) {
+				cout << "Incomplete parameters for -fr\n";
+				exit(1);
+			}
+			framerate = atoi(argv[i+1]);
 		}
 	}
 	if (!hasOne) {
@@ -210,9 +217,9 @@ void TakeParameters (int argc, char* argv[], FrameWriter** writer, std::vector<P
 	}
 
 	if (extendedBox)
-		*writer = new OGLWriter(nameOutput, codec, 60, resolution, resolution, -box, box, -box, box);
+		*writer = new OGLWriter(nameOutput, codec, framerate, resolution, resolution, -box, box, -box, box);
 	else
-		*writer = new OGLWriter(nameOutput, codec, 60, resolution, resolution, 0, box, 0, box);
+		*writer = new OGLWriter(nameOutput, codec, framerate, resolution, resolution, 0, box, 0, box);
 
 
 }
@@ -261,7 +268,7 @@ void connectPoly(FrameWriter *writer, std::vector<PolyReader>& poly, double minD
 void SimpleHelp() {
 	
 	cout << "If you find any bug, please write to lqcc@df.ufpe.br\n\n";
-	cout << "VINV: 0.01\n\n";	
+	cout << "VINV: 0.02\n\n";	
 	std::cout << "Commands: \n\n";
 	std::cout << " -h\n\tShow this help dialog\n\n"; 
 	std::cout << " -s filename Quantidade\n\tAdd a new kind of square, with Quantity squares. To each square, there must be five lines on the file.\n\n";
@@ -275,4 +282,5 @@ void SimpleHelp() {
 	std::cout << " -w width\n\tChooses linewidth. The standard is 0.1.\n\n";
 	std::cout << " -l name\n\tAdds a new label on the left-up side.\n\n";
 	std::cout << " -fs size\n\tSelects the new font size.\n\n";
+	std::cout << " -fr framerate\n\tSelects the framerate. The default is 30fps\n\n";
 }
