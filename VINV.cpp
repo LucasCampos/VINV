@@ -223,7 +223,6 @@ void Draw(FrameWriter* writer, std::vector<PolyReader>& poly, std::vector<std::s
 	do {
 		writer->StartFrame();
 		glColor3f(1.0,0.0,0.0);
-		int skip = 10;
 		end=true;
 
 		for (unsigned i=0; i<poly.size(); i++) 
