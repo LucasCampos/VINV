@@ -225,12 +225,9 @@ void Draw(FrameWriter* writer, std::vector<PolyReader>& poly, std::vector<std::s
 		glColor3f(1.0,0.0,0.0);
 		int skip = 10;
 		end=true;
-		for (int s=0; s<skip; s++){
-			bool localEnd=true;
-			for (unsigned i=0; i<poly.size(); i++) 
-					localEnd &= !poly[i].updatePoly();
-			end&=localEnd;
-		}
+
+		for (unsigned i=0; i<poly.size(); i++) 
+			end &= !poly[i].updatePoly();
 
 		Normalize(writer, poly, extendedBox);
 		for (unsigned i=0; i<poly.size(); i++) 
