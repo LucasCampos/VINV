@@ -160,7 +160,6 @@ class Circle: public DrawablePolygon {
 
 		Circle(double radius,double red, double green, double blue): DrawablePolygon (red,green,blue), _radius(radius) {};
 		void draw(FrameWriter *writer){
-
 			writer->filledCircle(_pos.getX(), _pos.getY(), _radius, _red, _green, _blue);
 
 

@@ -2,7 +2,7 @@ CC          = g++
 MAKE        = make
 SHELL       = /bin/sh
 
-LIBS = -lGL -lopencv_core -lopencv_highgui
+LIBS = -lGL -lopencv_core -lopencv_highgui -lX11
 EXECS = vinv
 SOURCES = VINV.cpp
 CXXFLAGS= -std=c++0x -O3 -Wall 
@@ -20,4 +20,4 @@ install: $(EXECS)
 clean:
 	/bin/rm -f *.o *.mod $(EXECS) *.gnu *.sh *.gif
 run: $(EXECS) 
-	./$(EXECS) -c test/nsannealingR17_Alfa32.dat 336 1 -b 30 -o test/saida.avi
+	./$(EXECS) -c test/transannealingR17_Alfa32.dat 336 1 -b 30 -o test/saida.avi

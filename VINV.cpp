@@ -222,6 +222,7 @@ void Draw(FrameWriter* writer, std::vector<PolyReader>& poly, std::vector<std::s
 	bool end = false;
 	while (!end) {
 		writer->StartFrame();
+		glColor3f(1.0,0.0,0.0);
 		for (unsigned i=0; i<poly.size(); i++) 
 			end &= poly[i].updatePoly();
 
@@ -232,7 +233,7 @@ void Draw(FrameWriter* writer, std::vector<PolyReader>& poly, std::vector<std::s
 		if (drawDistance) 
 			connectPoly(writer, poly, minDist, lineWidth);
 		//glColor3f(1.0,0,0);
-		writer->filledSquare(-100, -100, 100, 100, 255,0,0);
+		//writer->filledSquare(-100, -100, 100, 100, 255,0,0);
 		/*
 		for (unsigned i=0; i<toWrite.size(); i++) {
 			writer->writeText(.95*writer->left, (0.97-.05*fontSize - .1*fontSize*i)*writer->up, toWrite[i], fontSize, 0, 0, 0);
