@@ -59,7 +59,7 @@ int main(int argc, char* argv[])
 	TakeParameters(argc, argv, &writer, poly, toWrite, lineWidth, fontSize, drawDistance, minDist, extendedBox);
 	writer->printname();
 	Draw(writer, poly, toWrite, extendedBox, drawDistance, minDist, lineWidth, fontSize);
-	writer->close();
+	delete writer;
 }
 
 void Normalize(FrameWriter* writer, std::vector<PolyReader>& poly, bool extendedBox) {
@@ -70,8 +70,8 @@ void Normalize(FrameWriter* writer, std::vector<PolyReader>& poly, bool extended
 	for (unsigned i=0; i<poly.size(); i++){
 		
 		poly[i].rescale(factor);
-		if (extendedBox)
-			poly[i].translate(T);
+		//if (extendedBox)
+		//	poly[i].translate(T);
 	}
 };
 
@@ -210,21 +210,27 @@ void TakeParameters (int argc, char* argv[], FrameWriter** writer, std::vector<P
 	}
 
 	if (extendedBox)
-		*writer = new OGLWriter(nameOutput, codec, 20, resolution, resolution, -box, box, -box, box);
+		*writer = new OGLWriter(nameOutput, codec, 60, resolution, resolution, -box, box, -box, box);
 	else
-		*writer = new OGLWriter(nameOutput, codec, 20, resolution, resolution, 0, box, 0, box);
+		*writer = new OGLWriter(nameOutput, codec, 60, resolution, resolution, 0, box, 0, box);
 
 
 }
 
 void Draw(FrameWriter* writer, std::vector<PolyReader>& poly, std::vector<std::string>& toWrite, bool extendedBox, bool drawDistance, double minDist, double lineWidth, double fontSize)
 {
-	bool end = false;
-	while (!end) {
+	bool end=true;
+	do {
 		writer->StartFrame();
 		glColor3f(1.0,0.0,0.0);
-		for (unsigned i=0; i<poly.size(); i++) 
-			end &= poly[i].updatePoly();
+		int skip = 10;
+		end=true;
+		for (int s=0; s<skip; s++){
+			bool localEnd=true;
+			for (unsigned i=0; i<poly.size(); i++) 
+					localEnd &= !poly[i].updatePoly();
+			end&=localEnd;
+		}
 
 		Normalize(writer, poly, extendedBox);
 		for (unsigned i=0; i<poly.size(); i++) 
@@ -240,7 +246,7 @@ void Draw(FrameWriter* writer, std::vector<PolyReader>& poly, std::vector<std::s
 		}
 		*/
 		writer->EndFrame();
-	}
+	} while (!end);
 }
 
 void connectPoly(FrameWriter *writer, std::vector<PolyReader>& poly, double minDist, double lineWidth){
@@ -266,7 +272,7 @@ void SimpleHelp() {
 	std::cout << " -t filename Quantidade\n\tAdd a new kind of triangle, with Quantity triangles. To each triangle, there must be four lines on the file.\n\n";
 	std::cout << " -c filename Quantidade Radius\n\tAdd a new kind of circle, with Quantity circles and a given radius. To each circle, there must be one line on the file.\n\n";
 	std::cout << " -o Name\n\tOutput filename.\n\n";
-	std::cout << " -f Frame\n\tChooses the resolution of the output file. If this flag is not set, the resolution will be 1920x1920.\n\n";
+	std::cout << " -f Frame\n\tChooses the resolution of the output file. If this flag is not set, the resolution will be 640x640.\n\n";
 	std::cout << " -b Box\n\tBox size. If unset, the value will be 10.\n\n";
 	std::cout << " -r Distance\n\tDesenha draw a line between particle centers' if they are close than Distance.\n\n";
 	std::cout << " -e\nThe standard is having the box centred on (0,0). If you wish its left-down corner to be on (0,0), set this flag.\t\n\n";

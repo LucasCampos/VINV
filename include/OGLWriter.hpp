@@ -26,7 +26,6 @@ struct OGLWriter: public FrameWriter {
 				float rf = r/255.0;
 				float gf = g/255.0;
 				float bf = b/255.0;
-				std::cout << rf << std::endl;
 				glColor3f(rf,gf,bf);
 				cRed = r;
 				cGreen = g;

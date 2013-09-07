@@ -45,6 +45,10 @@ class VideoRecorder {
 			colorsCV = cv::Mat(width, height, CV_8UC3);
 		};
 
+		~VideoRecorder() {
+			video.release();
+		}
+
 		void GetFrame() {
 
 			glReadPixels(0,0,

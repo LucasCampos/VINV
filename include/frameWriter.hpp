@@ -35,6 +35,8 @@
 struct FrameWriter {
 
 	public: 
+
+	virtual ~FrameWriter(){};
 	virtual double NormalizingFactorX() const = 0;
 	virtual double CenterX() const =0;
 	virtual double NormalizingFactorY() const = 0;
