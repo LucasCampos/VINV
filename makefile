@@ -18,6 +18,6 @@ install: $(EXECS)
 	mv $(EXECS) /usr/bin
 
 clean:
-	/bin/rm -f *.o *.mod $(EXECS) *.gnu *.sh *.gif
+	/bin/rm -f *.o *.mod $(EXECS) *.gnu *.sh *.gif test/saida.mkv
 run: $(EXECS) 
 	./$(EXECS) -c test/transannealingR17_Alfa32.dat 336 1 -b 30 -o test/saida.mkv
