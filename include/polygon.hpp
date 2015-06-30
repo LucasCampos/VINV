@@ -147,7 +147,7 @@ class Triangle: public DrawablePolygon{
 			Vector2D p2 = _vertex[1]+_pos;
 			Vector2D p3 = _vertex[2]+_pos;
 			
-			writer->filledTriangle(p1.getX(), p1.getY(), p2.getX(), p2.getY(),  p3.getX(), p2.getY(), _red, _green, _blue);
+			writer->filledTriangle(p1.getX(), p1.getY(), p2.getX(), p2.getY(),  p3.getX(), p3.getY(), _red, _green, _blue);
 			
 		};
 
